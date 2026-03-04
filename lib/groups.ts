@@ -8,7 +8,7 @@ export async function getGroups(): Promise<Group[]> {
     .order('is_official', { ascending: false })
     .order('created_at', { ascending: true })
 
-  if (error) return []
+  if (error || !data) return []
   return data
 }
 
@@ -29,9 +29,9 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
     .select('group:groups(*)')
     .eq('user_id', userId)
 
-  if (error) return []
+  if (error || !data) return []
 
-  return (data?.map((gm: any) => gm.group) ?? []).filter(Boolean)
+  return data.map((gm: any) => gm.group).filter(Boolean)
 }
 
 export async function getGroupMembers(groupId: string) {
@@ -40,7 +40,7 @@ export async function getGroupMembers(groupId: string) {
     .select('*, profile:profiles(*)')
     .eq('group_id', groupId)
 
-  if (error) return []
+  if (error || !data) return []
   return data
 }
 
@@ -49,15 +49,21 @@ export async function createGroup(
   groupData: CreateGroupData
 ): Promise<Group | null> {
 
+  const insertRow = {
+    name: groupData.name,
+    description: groupData.description ?? null,
+    avatar_url: groupData.avatar_url ?? null,
+    created_by: userId,
+  }
+
   const { data: group, error: groupError } = await supabase
     .from('groups')
-    .insert([{ ...groupData, created_by: userId }])   // ✅ FIXED
+    .insert([insertRow])
     .select()
     .single()
 
   if (groupError || !group) return null
 
-  // Creator becomes admin
   await supabase.from('group_members').insert([
     {
       group_id: group.id,
