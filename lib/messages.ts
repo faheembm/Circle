@@ -12,6 +12,7 @@ export async function getGroupMessages(
   groupId: string,
   page = 0
 ): Promise<MessageWithSender[]> {
+
   const { data, error } = await supabase
     .from('messages')
     .select(MESSAGE_SELECT)
@@ -21,8 +22,9 @@ export async function getGroupMessages(
     .order('created_at', { ascending: false })
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-  if (error) return []
-  return (data as unknown as MessageWithSender[]).reverse()
+  if (error || !data) return []
+
+  return (data as MessageWithSender[]).reverse()
 }
 
 export async function getDMMessages(
@@ -30,6 +32,7 @@ export async function getDMMessages(
   userB: string,
   page = 0
 ): Promise<MessageWithSender[]> {
+
   const { data, error } = await supabase
     .from('messages')
     .select(MESSAGE_SELECT)
@@ -41,38 +44,79 @@ export async function getDMMessages(
     .order('created_at', { ascending: false })
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-  if (error) return []
-  return (data as unknown as MessageWithSender[]).reverse()
+  if (error || !data) return []
+
+  return (data as MessageWithSender[]).reverse()
 }
 
-export async function sendGroupMessage(groupId: string, senderId: string, content: string) {
+export async function sendGroupMessage(
+  groupId: string,
+  senderId: string,
+  content: string
+) {
+
+  const insertRow = {
+    type: 'group',
+    group_id: groupId,
+    sender_id: senderId,
+    content
+  }
+
   const { data, error } = await supabase
     .from('messages')
-    .insert({ type: 'group', group_id: groupId, sender_id: senderId, content })
+    .insert(insertRow as any)
     .select(MESSAGE_SELECT)
     .single()
-  return { data: data as unknown as MessageWithSender | null, error }
+
+  return {
+    data: data as MessageWithSender | null,
+    error
+  }
 }
 
-export async function sendDirectMessage(senderId: string, receiverId: string, content: string) {
+export async function sendDirectMessage(
+  senderId: string,
+  receiverId: string,
+  content: string
+) {
+
+  const insertRow = {
+    type: 'direct',
+    sender_id: senderId,
+    receiver_id: receiverId,
+    content
+  }
+
   const { data, error } = await supabase
     .from('messages')
-    .insert({ type: 'direct', sender_id: senderId, receiver_id: receiverId, content })
+    .insert(insertRow as any)
     .select(MESSAGE_SELECT)
     .single()
-  return { data: data as unknown as MessageWithSender | null, error }
+
+  return {
+    data: data as MessageWithSender | null,
+    error
+  }
 }
 
 export async function deleteMessage(messageId: string) {
+
   const { error } = await supabase
     .from('messages')
     .update({ is_deleted: true })
     .eq('id', messageId)
+
   return { error }
 }
 
 export async function getDMConversations(userId: string) {
-  const { data, error } = await supabase.rpc('get_dm_conversations', { user_id: userId })
+
+  const { data, error } = await supabase.rpc(
+    'get_dm_conversations',
+    { user_id: userId }
+  )
+
   if (error) return []
+
   return data
 }
