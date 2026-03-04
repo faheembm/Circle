@@ -57,7 +57,7 @@ export async function createGroup(
 
   const { data: group, error: groupError } = await supabase
     .from('groups')
-    .insert(insertRow as any)   // ← important fix
+    .insert(insertRow as any)
     .select()
     .single()
 
@@ -67,7 +67,7 @@ export async function createGroup(
     group_id: group.id,
     user_id: userId,
     role: 'admin',
-  })
+  } as any)
 
   return group as Group
 }
@@ -79,7 +79,7 @@ export async function joinGroup(groupId: string, userId: string) {
       group_id: groupId,
       user_id: userId,
       role: 'member',
-    })
+    } as any)
 
   return { error }
 }
