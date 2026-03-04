@@ -52,7 +52,6 @@ export async function createGroup(
   const insertRow = {
     name: groupData.name,
     description: groupData.description ?? null,
-    avatar_url: groupData.avatar_url ?? null,
     created_by: userId,
   }
 
