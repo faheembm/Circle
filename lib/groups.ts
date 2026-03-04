@@ -108,12 +108,16 @@ export async function isMember(groupId: string, userId: string): Promise<boolean
 }
 
 export async function isAdmin(groupId: string, userId: string): Promise<boolean> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('group_members')
     .select('role')
     .eq('group_id', groupId)
     .eq('user_id', userId)
     .single()
 
-  return data?.role === 'admin'
+  if (error || !data) return false
+
+  const row = data as { role: string }
+
+  return row.role === 'admin'
 }
