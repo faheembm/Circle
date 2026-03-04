@@ -19,7 +19,7 @@ export async function getGroup(groupId: string): Promise<Group | null> {
     .eq('id', groupId)
     .single()
 
-  if (error) return null
+  if (error || !data) return null
   return data as Group
 }
 
@@ -55,13 +55,15 @@ export async function createGroup(
     created_by: userId,
   }
 
-  const { data: group, error: groupError } = await supabase
+  const { data, error } = await supabase
     .from('groups')
     .insert(insertRow as any)
     .select()
     .single()
 
-  if (groupError || !group) return null
+  if (error || !data) return null
+
+  const group = data as Group
 
   await supabase.from('group_members').insert({
     group_id: group.id,
@@ -69,7 +71,7 @@ export async function createGroup(
     role: 'admin',
   } as any)
 
-  return group as Group
+  return group
 }
 
 export async function joinGroup(groupId: string, userId: string) {
