@@ -103,7 +103,7 @@ export async function deleteMessage(messageId: string) {
 
   const { error } = await supabase
     .from('messages')
-    .update({ is_deleted: true })
+    .update({ is_deleted: true } as any)   // ← FIX HERE
     .eq('id', messageId)
 
   return { error }
