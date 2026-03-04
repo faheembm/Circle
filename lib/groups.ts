@@ -9,7 +9,7 @@ export async function getGroups(): Promise<Group[]> {
     .order('created_at', { ascending: true })
 
   if (error || !data) return []
-  return data
+  return data as Group[]
 }
 
 export async function getGroup(groupId: string): Promise<Group | null> {
@@ -20,7 +20,7 @@ export async function getGroup(groupId: string): Promise<Group | null> {
     .single()
 
   if (error) return null
-  return data
+  return data as Group
 }
 
 export async function getUserGroups(userId: string): Promise<Group[]> {
@@ -31,7 +31,7 @@ export async function getUserGroups(userId: string): Promise<Group[]> {
 
   if (error || !data) return []
 
-  return data.map((gm: any) => gm.group).filter(Boolean)
+  return data.map((gm: any) => gm.group).filter(Boolean) as Group[]
 }
 
 export async function getGroupMembers(groupId: string) {
@@ -57,33 +57,29 @@ export async function createGroup(
 
   const { data: group, error: groupError } = await supabase
     .from('groups')
-    .insert([insertRow])
+    .insert(insertRow as any)   // ← important fix
     .select()
     .single()
 
   if (groupError || !group) return null
 
-  await supabase.from('group_members').insert([
-    {
-      group_id: group.id,
-      user_id: userId,
-      role: 'admin',
-    }
-  ])
+  await supabase.from('group_members').insert({
+    group_id: group.id,
+    user_id: userId,
+    role: 'admin',
+  })
 
-  return group
+  return group as Group
 }
 
 export async function joinGroup(groupId: string, userId: string) {
   const { error } = await supabase
     .from('group_members')
-    .insert([
-      {
-        group_id: groupId,
-        user_id: userId,
-        role: 'member',
-      }
-    ])
+    .insert({
+      group_id: groupId,
+      user_id: userId,
+      role: 'member',
+    })
 
   return { error }
 }
