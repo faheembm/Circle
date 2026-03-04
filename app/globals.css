@@ -1,0 +1,233 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design Tokens ───────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --bg:           #fafafa;
+  --bg-secondary: #f0f0f0;
+  --bg-elevated:  #ffffff;
+  --border:       #e2e2e2;
+  --border-soft:  #ececec;
+  --text:         #0a0a0a;
+  --text-muted:   #6b6b6b;
+  --text-faint:   #a0a0a0;
+  --accent:       #0a0a0a;
+  --accent-hover: #222222;
+  --accent-text:  #ffffff;
+  --danger:       #c0392b;
+  --success:      #27ae60;
+  --shadow:       0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.10);
+  --radius:       10px;
+  --radius-sm:    6px;
+  --radius-full:  9999px;
+}
+
+[data-theme="dark"] {
+  --bg:           #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-elevated:  #1a1a1a;
+  --border:       #2a2a2a;
+  --border-soft:  #222222;
+  --text:         #f0f0f0;
+  --text-muted:   #888888;
+  --text-faint:   #555555;
+  --accent:       #f0f0f0;
+  --accent-hover: #cccccc;
+  --accent-text:  #0a0a0a;
+  --danger:       #e74c3c;
+  --success:      #2ecc71;
+  --shadow:       0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* ── Base ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  transition: background 0.2s, color 0.2s;
+  overscroll-behavior: none;
+}
+
+/* ── Typography ──────────────────────────────────────────── */
+h1, h2, h3, h4 { line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; }
+h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1rem; }
+
+a { color: inherit; text-decoration: none; }
+
+::selection { background: var(--accent); color: var(--accent-text); }
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* ── Components ──────────────────────────────────────────── */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] 
+           px-4 py-2 text-sm font-medium transition-all duration-150 
+           select-none cursor-pointer border-0 outline-none;
+    background: var(--accent);
+    color: var(--accent-text);
+
+    &:hover { background: var(--accent-hover); }
+    &:active { transform: scale(0.98); }
+    &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    &:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    &:hover { background: var(--bg-secondary); }
+  }
+
+  .btn-danger {
+    background: var(--danger);
+    color: white;
+    &:hover { opacity: 0.9; }
+  }
+
+  .input {
+    @apply w-full rounded-[var(--radius-sm)] px-3 py-2 text-sm outline-none
+           transition-all duration-150;
+    background: var(--bg-secondary);
+    color: var(--text);
+    border: 1px solid var(--border);
+
+    &:focus { border-color: var(--text-muted); background: var(--bg-elevated); }
+    &::placeholder { color: var(--text-faint); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  .card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  .surface {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border-soft);
+  }
+
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    border-right: 1px solid var(--border-soft);
+  }
+
+  .message-bubble-self {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-radius: 18px 18px 4px 18px;
+  }
+
+  .message-bubble-other {
+    background: var(--bg-secondary);
+    color: var(--text);
+    border-radius: 18px 18px 18px 4px;
+    border: 1px solid var(--border-soft);
+  }
+
+  .avatar {
+    @apply flex items-center justify-center rounded-full overflow-hidden 
+           flex-shrink-0 font-medium text-sm;
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    border: 1px solid var(--border-soft);
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-[var(--radius-sm)] text-sm
+           transition-colors duration-100 cursor-pointer w-full text-left;
+    color: var(--text-muted);
+
+    &:hover { background: var(--bg-secondary); color: var(--text); }
+    &.active { background: var(--bg-secondary); color: var(--text); font-weight: 500; }
+  }
+
+  .badge {
+    @apply inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium;
+    background: var(--accent);
+    color: var(--accent-text);
+  }
+}
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+.animate-fade-in  { animation: fadeIn 0.2s ease both; }
+.animate-slide-up { animation: slideUp 0.3s ease both; }
+
+.typing-dot {
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: pulse-dot 1.2s ease infinite;
+
+  &:nth-child(2) { animation-delay: 0.2s; }
+  &:nth-child(3) { animation-delay: 0.4s; }
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    top: auto;
+    border-right: none;
+    border-top: 1px solid var(--border-soft);
+    flex-direction: row;
+    z-index: 50;
+    padding: 0;
+    height: 60px;
+  }
+}
