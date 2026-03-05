@@ -1,5 +1,7 @@
 import { supabase } from './supabase/client'
-import type { Profile, ProfileUpdateData } from '@/types'
+import type { Database, Profile, ProfileUpdateData } from '@/types'
+
+type FollowRow = Database['public']['Tables']['follows']['Row']
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
@@ -22,13 +24,12 @@ export async function getProfileByUsername(username: string): Promise<Profile | 
 }
 
 export async function updateProfile(userId: string, updates: ProfileUpdateData) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(updates)
+  const { data, error } = await (supabase.from('profiles') as any)
+    .update(updates as Database['public']['Tables']['profiles']['Update'])
     .eq('id', userId)
     .select()
     .single()
-  return { data, error }
+  return { data: (data as Profile | null), error }
 }
 
 export async function searchProfiles(query: string, limit = 10): Promise<Profile[]> {
@@ -38,7 +39,7 @@ export async function searchProfiles(query: string, limit = 10): Promise<Profile
     .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
     .limit(limit)
   if (error) return []
-  return data
+  return (data ?? []) as Profile[]
 }
 
 export async function getFollowers(userId: string): Promise<Profile[]> {
@@ -47,7 +48,8 @@ export async function getFollowers(userId: string): Promise<Profile[]> {
     .select('follower:profiles!follower_id(*)')
     .eq('following_id', userId)
   if (error) return []
-  return (data?.map((f: any) => f.follower) ?? []).filter(Boolean)
+  const rows = (data ?? []) as Array<{ follower: Profile | null }>
+  return rows.map((f) => f.follower).filter(Boolean) as Profile[]
 }
 
 export async function getFollowing(userId: string): Promise<Profile[]> {
@@ -56,13 +58,18 @@ export async function getFollowing(userId: string): Promise<Profile[]> {
     .select('following:profiles!following_id(*)')
     .eq('follower_id', userId)
   if (error) return []
-  return (data?.map((f: any) => f.following) ?? []).filter(Boolean)
+  const rows = (data ?? []) as Array<{ following: Profile | null }>
+  return rows.map((f) => f.following).filter(Boolean) as Profile[]
 }
 
 export async function followUser(followerId: string, followingId: string) {
+  const payload: Database['public']['Tables']['follows']['Insert'] = {
+    follower_id: followerId,
+    following_id: followingId,
+  }
   const { error } = await supabase
     .from('follows')
-    .insert({ follower_id: followerId, following_id: followingId })
+    .insert(payload as any)
   return { error }
 }
 
@@ -82,7 +89,7 @@ export async function isFollowing(followerId: string, followingId: string): Prom
     .eq('follower_id', followerId)
     .eq('following_id', followingId)
     .single()
-  return !!data
+  return !!(data as Pick<FollowRow, 'id'> | null)
 }
 
 export async function getFollowCounts(userId: string) {

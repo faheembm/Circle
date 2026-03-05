@@ -1,4 +1,4 @@
-# Relay Chat
+# Circle Chat
 
 A minimal, production-quality real-time chat platform built with Next.js 14, Supabase, and TypeScript.
 

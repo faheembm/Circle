@@ -23,8 +23,7 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
-      router.refresh()
+      router.replace('/chats')
     }
   }
 
@@ -34,7 +33,7 @@ export default function LoginPage() {
         <div className="mb-8">
           <h2 className="font-semibold mb-1">Welcome back</h2>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            Sign in to continue to Relay
+            Sign in to continue to Circle
           </p>
         </div>
 

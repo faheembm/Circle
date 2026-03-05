@@ -1,6 +1,6 @@
 {
-  "name": "Relay — Real-time Chat",
-  "short_name": "Relay",
+  "name": "Circle — Real-time Chat",
+  "short_name": "Circle",
   "description": "A minimal, fast, real-time chat platform.",
   "start_url": "/dashboard",
   "display": "standalone",

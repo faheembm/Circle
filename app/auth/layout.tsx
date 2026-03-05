@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.5" />
           <circle cx="10" cy="10" r="3" fill="currentColor" />
         </svg>
-        <span className="font-semibold tracking-tight">Relay</span>
+        <span className="font-semibold tracking-tight">Circle</span>
       </Link>
       {children}
     </div>
