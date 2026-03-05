@@ -1,5 +1,5 @@
 import { supabase } from './supabase/client'
-import type { MessageWithSender } from '@/types'
+import type { Database, MessageWithSender } from '@/types'
 
 const MESSAGE_SELECT = `
   *,
@@ -55,11 +55,13 @@ export async function sendGroupMessage(
   content: string
 ) {
 
-  const insertRow = {
+  const insertRow: Database['public']['Tables']['messages']['Insert'] = {
     type: 'group',
     group_id: groupId,
     sender_id: senderId,
-    content
+    receiver_id: null,
+    content,
+    is_deleted: false,
   }
 
   const { data, error } = await supabase
@@ -80,11 +82,13 @@ export async function sendDirectMessage(
   content: string
 ) {
 
-  const insertRow = {
+  const insertRow: Database['public']['Tables']['messages']['Insert'] = {
     type: 'direct',
+    group_id: null,
     sender_id: senderId,
     receiver_id: receiverId,
-    content
+    content,
+    is_deleted: false,
   }
 
   const { data, error } = await supabase
@@ -101,9 +105,13 @@ export async function sendDirectMessage(
 
 export async function deleteMessage(messageId: string) {
 
-  const { error } = await supabase
-    .from('messages')
-    .update({ is_deleted: true } as any)
+  const updates: Database['public']['Tables']['messages']['Update'] = {
+    is_deleted: true,
+    content: '',
+  }
+
+  const { error } = await (supabase.from('messages') as any)
+    .update(updates)
     .eq('id', messageId)
 
   return { error }
@@ -111,12 +119,12 @@ export async function deleteMessage(messageId: string) {
 
 export async function getDMConversations(userId: string) {
 
-  const { data, error } = await supabase.rpc(
+  const { data, error } = await (supabase as any).rpc(
     'get_dm_conversations',
     { user_id: userId }
   )
 
-  if (error) return []
+  if (error || !data) return []
 
-  return data
+  return data as Array<Record<string, unknown>>
 }
