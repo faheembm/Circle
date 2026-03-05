@@ -22,9 +22,14 @@ export default function LoginPage() {
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.replace('/chats')
+      return
     }
+
+    // give Supabase a moment to establish session
+    setTimeout(() => {
+      router.replace('/chats')
+      router.refresh()
+    }, 100)
   }
 
   return (
@@ -38,10 +43,12 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+
           <div className="space-y-1">
             <label className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
               Email
             </label>
+
             <input
               type="email"
               className="input"
@@ -57,6 +64,7 @@ export default function LoginPage() {
             <label className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
               Password
             </label>
+
             <input
               type="password"
               className="input"
@@ -68,25 +76,43 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-sm px-3 py-2 rounded-[var(--radius-sm)]"
-               style={{ background: 'rgba(192,57,43,0.08)', color: 'var(--danger)' }}>
+            <p
+              className="text-sm px-3 py-2 rounded-[var(--radius-sm)]"
+              style={{
+                background: 'rgba(192,57,43,0.08)',
+                color: 'var(--danger)'
+              }}
+            >
               {error}
             </p>
           )}
 
-          <button type="submit" className="btn w-full py-2.5" disabled={loading}>
+          <button
+            type="submit"
+            className="btn w-full py-2.5"
+            disabled={loading}
+          >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
+
         </form>
 
         <div className="divider my-6" />
 
-        <p className="text-sm text-center" style={{ color: 'var(--text-muted)' }}>
+        <p
+          className="text-sm text-center"
+          style={{ color: 'var(--text-muted)' }}
+        >
           No account?{' '}
-          <Link href="/auth/signup" className="font-medium" style={{ color: 'var(--text)' }}>
+          <Link
+            href="/auth/signup"
+            className="font-medium"
+            style={{ color: 'var(--text)' }}
+          >
             Create one
           </Link>
         </p>
+
       </div>
     </div>
   )
