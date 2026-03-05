@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
-import { getProfileByUsername, getFollowCounts, isFollowing, followUser, unfollowUser } from '@/lib/profiles'
+import { getProfile, getProfileByUsername, getFollowCounts, isFollowing, followUser, unfollowUser } from '@/lib/profiles'
 import { getInitials, formatFullDate } from '@/lib/utils'
 import AppSidebar from '@/components/layout/AppSidebar'
 import MobileNav from '@/components/layout/MobileNav'
@@ -12,10 +12,11 @@ import type { Profile } from '@/types'
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>()
-  const { user, profile: myProfile } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
 
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [myProfile, setMyProfile] = useState<Profile | null>(null)
   const [counts, setCounts] = useState({ followers: 0, following: 0 })
   const [following, setFollowing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -24,20 +25,31 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!username) return
-    Promise.all([
-      getProfileByUsername(username),
-    ]).then(async ([p]) => {
-      if (!p) { router.push('/dashboard'); return }
-      setProfile(p)
-      const [c, f] = await Promise.all([
-        getFollowCounts(p.id),
-        user ? isFollowing(user.id, p.id) : Promise.resolve(false),
-      ])
-      setCounts(c)
-      setFollowing(f)
-      setLoading(false)
-    })
-  }, [username, user])
+    ;(async () => {
+      try {
+        const [p, me] = await Promise.all([
+          getProfileByUsername(username),
+          user ? getProfile(user.id) : Promise.resolve(null),
+        ])
+        if (!p) {
+          router.push('/chats')
+          return
+        }
+        setProfile(p)
+        setMyProfile(me)
+        const [c, f] = await Promise.all([
+          getFollowCounts(p.id),
+          user ? isFollowing(user.id, p.id) : Promise.resolve(false),
+        ])
+        setCounts(c)
+        setFollowing(f)
+      } catch {
+        setProfile(null)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [username, user, router])
 
   const handleFollow = async () => {
     if (!user || !profile) return
