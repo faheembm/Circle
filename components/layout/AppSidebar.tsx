@@ -2,25 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 import { signOut } from '@/lib/auth'
-import { getUserGroups } from '@/lib/groups'
 import { getInitials, cn } from '@/lib/utils'
-import type { Group } from '@/types'
 
 export default function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, profile } = useAuth()
+  const { profile } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  const [groups, setGroups] = useState<Group[]>([])
-
-  useEffect(() => {
-    if (!user) return
-    getUserGroups(user.id).then(setGroups)
-  }, [user])
 
   const handleSignOut = async () => {
     await signOut()
@@ -41,28 +32,10 @@ export default function AppSidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-        <NavItem href="/dashboard" label="Home" icon="⌂" active={pathname === '/dashboard'} />
-        <NavItem href="/dashboard/people" label="People" icon="◎" active={pathname.startsWith('/dashboard/people')} />
-        <NavItem href="/dashboard/groups" label="All groups" icon="⬡" active={pathname === '/dashboard/groups'} />
-
-        {groups.length > 0 && (
-          <>
-            <div className="px-3 pt-4 pb-1">
-              <span className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>
-                Channels
-              </span>
-            </div>
-            {groups.map((g) => (
-              <NavItem
-                key={g.id}
-                href={`/chat/${g.id}`}
-                label={g.name}
-                icon={g.is_official ? '★' : '#'}
-                active={pathname === `/chat/${g.id}`}
-              />
-            ))}
-          </>
-        )}
+        <NavItem href="/chats" label="Chats" icon="✉" active={pathname.startsWith('/chats')} />
+        <NavItem href="/circles" label="Circles" icon="⬡" active={pathname.startsWith('/circles')} />
+        <NavItem href="/explore" label="Explore" icon="◎" active={pathname.startsWith('/explore')} />
+        <NavItem href="/requests" label="Requests" icon="⟡" active={pathname.startsWith('/requests')} />
       </nav>
 
       {/* Footer */}

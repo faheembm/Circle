@@ -10,11 +10,11 @@ export default function MobileNav() {
   const { profile } = useAuth()
 
   const items = [
-    { href: '/dashboard', label: 'Home', icon: HomeIcon },
-    { href: '/dashboard/people', label: 'People', icon: PeopleIcon },
-    { href: '/dashboard/groups', label: 'Groups', icon: GroupsIcon },
-    { href: `/profile/${profile?.username}`, label: 'Profile', icon: ProfileIcon },
-    { href: '/settings', label: 'Settings', icon: SettingsIcon },
+    { href: '/chats', label: 'Chats', icon: HomeIcon },
+    { href: '/circles', label: 'Circles', icon: GroupsIcon },
+    { href: '/explore', label: 'Explore', icon: PeopleIcon },
+    { href: '/requests', label: 'Reqs', icon: RequestsIcon },
+    { href: `/profile/${profile?.username}`, label: 'Profile', icon: ProfileIcon }
   ]
 
   return (
@@ -54,6 +54,6 @@ function GroupsIcon() {
 function ProfileIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.5"/><path d="M3 17c0-3.866 3.134-6 7-6s7 2.134 7 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
 }
-function SettingsIcon() {
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+function RequestsIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 5.5A1.5 1.5 0 015.5 4h9A1.5 1.5 0 0116 5.5v9a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 014 14.5v-9z" stroke="currentColor" strokeWidth="1.5"/><path d="M7 8h6M7 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
 }

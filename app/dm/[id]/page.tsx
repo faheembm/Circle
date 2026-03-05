@@ -8,12 +8,13 @@ import { useMessages } from '@/hooks/useMessages'
 import { getProfile } from '@/lib/profiles'
 import MessageList from '@/components/chat/MessageList'
 import MessageInput from '@/components/chat/MessageInput'
+import FullScreenLoader from '@/components/ui/FullScreenLoader'
 import { getInitials } from '@/lib/utils'
 import type { Profile } from '@/types'
 
 export default function DMPage() {
   const { id: otherId } = useParams<{ id: string }>()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [other, setOther] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -22,15 +23,37 @@ export default function DMPage() {
     useMessages({ type: 'direct', userId: user?.id, otherUserId: otherId })
 
   useEffect(() => {
-    if (!otherId) return
-    getProfile(otherId).then((p) => {
-      if (!p) { router.push('/dashboard'); return }
-      setOther(p)
-      setLoading(false)
-    })
-  }, [otherId])
+    if (authLoading) return
 
-  if (loading || !other) return null
+    if (!otherId) {
+      setLoading(false)
+      router.replace('/dashboard')
+      return
+    }
+
+    let active = true
+
+    getProfile(otherId)
+      .then((p) => {
+        if (!active) return
+        if (!p) {
+          router.replace('/dashboard')
+          return
+        }
+        setOther(p)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [otherId, authLoading, router])
+
+  if (loading || authLoading) return <FullScreenLoader label="Loading conversation…" />
+
+  if (!other) return <FullScreenLoader label="Redirecting…" />
 
   return (
     <div className="flex flex-col h-full">
