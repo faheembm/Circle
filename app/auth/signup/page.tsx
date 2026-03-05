@@ -35,7 +35,7 @@ export default function SignupPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.replace('/chats')
+      router.push('/chats')
       router.refresh()
     }
   }

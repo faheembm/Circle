@@ -1,124 +1,112 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
+import { getGroups, getUserGroups, joinGroup, leaveGroup, createGroup } from '@/lib/groups'
 import AppSidebar from '@/components/layout/AppSidebar'
 import MobileNav from '@/components/layout/MobileNav'
-import FullScreenLoader from '@/components/ui/FullScreenLoader'
-import { useAuth } from '@/hooks/useAuth'
-import { createCircle, getPublicCircles, getUserCircles, joinCircle } from '@/lib/circles'
-import type { Circle } from '@/types'
+import { getInitials } from '@/lib/utils'
+import type { Group } from '@/types'
 
 export default function CirclesPage() {
-  const { user, loading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [myCircles, setMyCircles] = useState<Circle[]>([])
-  const [publicCircles, setPublicCircles] = useState<Circle[]>([])
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [isPrivate, setIsPrivate] = useState(false)
-  const [pageLoading, setPageLoading] = useState(true)
+  const [groups, setGroups] = useState<Group[]>([])
+  const [myGroupIds, setMyGroupIds] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+  const [newGroup, setNewGroup] = useState({ name: '', description: '' })
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/auth/login')
-  }, [loading, user, router])
+    if (authLoading) return
+    if (!user) {
+      router.replace('/auth/login')
+      return
+    }
+    Promise.all([getGroups(), getUserGroups(user.id)]).then(([all, mine]) => {
+      setGroups(all)
+      setMyGroupIds(new Set(mine.map((g) => g.id)))
+      setLoading(false)
+    })
+  }, [authLoading, user, router])
 
-  useEffect(() => {
-    if (loading || !user) return
+  const handleJoin = async (groupId: string) => {
+    if (!user) return
+    await joinGroup(groupId, user.id)
+    setMyGroupIds((s) => new Set([...s, groupId]))
+  }
 
-    Promise.all([getUserCircles(user.id), getPublicCircles()])
-      .then(([mine, pub]) => {
-        setMyCircles(mine)
-        setPublicCircles(pub)
-      })
-      .finally(() => setPageLoading(false))
-  }, [loading, user])
-
-  const myIds = useMemo(() => new Set(myCircles.map((c) => c.id)), [myCircles])
+  const handleLeave = async (groupId: string) => {
+    if (!user) return
+    await leaveGroup(groupId, user.id)
+    setMyGroupIds((s) => { const n = new Set(s); n.delete(groupId); return n })
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user || !name.trim()) return
-
-    const created = await createCircle(user.id, {
-      name,
-      description,
-      is_private: isPrivate,
-    })
-
-    if (!created) return
-
-    setMyCircles((prev) => [created, ...prev])
-    if (!created.is_private) {
-      setPublicCircles((prev) => [created, ...prev])
+    if (!user || !newGroup.name.trim()) return
+    setCreating(true)
+    const g = await createGroup(user.id, newGroup)
+    if (g) {
+      setGroups((prev) => [...prev, g])
+      setMyGroupIds((s) => new Set([...s, g.id]))
+      setShowCreate(false)
+      setNewGroup({ name: '', description: '' })
     }
-    setName('')
-    setDescription('')
-    setIsPrivate(false)
+    setCreating(false)
   }
 
-  const handleJoinPublic = async (circleId: string) => {
-    if (!user) return
-    await joinCircle(circleId, user.id)
-    const joined = publicCircles.find((c) => c.id === circleId)
-    if (joined) {
-      setMyCircles((prev) => [joined, ...prev])
-    }
+  if (authLoading || loading) {
+    return <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}><div className="flex gap-1.5"><span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" /></div></div>
   }
 
-  if (loading || !user || pageLoading) return <FullScreenLoader label="Loading circles…" />
+  if (!user) return null
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <div className="hidden md:flex"><AppSidebar /></div>
-      <main className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6 max-w-3xl">
-        <h1 className="font-semibold mb-6">Circles</h1>
+      <main className="flex-1 overflow-y-auto p-6 max-w-2xl pb-24 md:pb-6">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="font-semibold">Circles</h1>
+          <button className="btn text-sm px-4 py-1.5" onClick={() => setShowCreate(true)}>+ New circle</button>
+        </div>
 
-        <form className="card p-4 mb-6 space-y-3" onSubmit={handleCreate}>
-          <h2 className="text-sm font-medium">Create a circle</h2>
-          <input className="input" placeholder="Circle name" value={name} onChange={(e) => setName(e.target.value)} required />
-          <input className="input" placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
-            Private (invite only)
-          </label>
-          <button className="btn" type="submit">Create circle</button>
-        </form>
-
-        <section className="mb-8">
-          <h2 className="text-sm font-medium mb-3">Your circles</h2>
-          <div className="space-y-2">
-            {myCircles.map((circle) => (
-              <div key={circle.id} className="card p-3">
-                <p className="text-sm font-medium">{circle.name}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {circle.is_private ? 'Private · invite only' : 'Public'}
-                </p>
+        {showCreate && (
+          <div className="card p-6 mb-6 animate-slide-up">
+            <h3 className="font-medium mb-4">Create circle</h3>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <input className="input" placeholder="Circle name" value={newGroup.name} onChange={(e) => setNewGroup((n) => ({ ...n, name: e.target.value }))} required autoFocus />
+              <input className="input" placeholder="Description (optional)" value={newGroup.description} onChange={(e) => setNewGroup((n) => ({ ...n, description: e.target.value }))} />
+              <div className="flex gap-2">
+                <button type="submit" className="btn flex-1" disabled={creating}>{creating ? 'Creating…' : 'Create'}</button>
+                <button type="button" className="btn btn-ghost flex-1" onClick={() => setShowCreate(false)}>Cancel</button>
               </div>
-            ))}
-            {myCircles.length === 0 && <p className="text-sm" style={{ color: 'var(--text-faint)' }}>You are not in any circles yet.</p>}
+            </form>
           </div>
-        </section>
+        )}
 
-        <section>
-          <h2 className="text-sm font-medium mb-3">Public circles</h2>
-          <div className="space-y-2">
-            {publicCircles.map((circle) => (
-              <div key={circle.id} className="card p-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">{circle.name}</p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{circle.description ?? 'Public circle'}</p>
+        <div className="space-y-2">
+          {groups.map((g) => {
+            const joined = myGroupIds.has(g.id)
+            return (
+              <div key={g.id} className="card p-4 flex items-center gap-4">
+                <div className="avatar w-10 h-10 text-sm font-semibold flex-shrink-0">{g.avatar_url ? <img src={g.avatar_url} alt={g.name} className="w-full h-full object-cover" /> : getInitials(g.name)}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Link href={`/chat/${g.id}`} className="text-sm font-medium hover:underline truncate">{g.name}</Link>
+                    {g.is_official && <span className="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>official</span>}
+                  </div>
+                  {g.description && <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{g.description}</p>}
                 </div>
-                {!myIds.has(circle.id) && (
-                  <button className="btn btn-ghost text-xs px-3 py-1.5" onClick={() => handleJoinPublic(circle.id)}>
-                    Join
-                  </button>
-                )}
+                {!g.is_official && <button className={joined ? 'btn btn-ghost text-xs px-3 py-1.5' : 'btn text-xs px-3 py-1.5'} onClick={() => joined ? handleLeave(g.id) : handleJoin(g.id)}>{joined ? 'Leave' : 'Join'}</button>}
+                {g.is_official && joined && <Link href={`/chat/${g.id}`} className="btn btn-ghost text-xs px-3 py-1.5">Open</Link>}
               </div>
-            ))}
-            {publicCircles.length === 0 && <p className="text-sm" style={{ color: 'var(--text-faint)' }}>No public circles yet.</p>}
-          </div>
-        </section>
+            )
+          })}
+        </div>
       </main>
       <div className="md:hidden"><MobileNav /></div>
     </div>

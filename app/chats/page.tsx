@@ -6,77 +6,99 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import AppSidebar from '@/components/layout/AppSidebar'
 import MobileNav from '@/components/layout/MobileNav'
-import FullScreenLoader from '@/components/ui/FullScreenLoader'
-import { getUserCircles } from '@/lib/circles'
+import { getUserGroups } from '@/lib/groups'
 import { getFollowing } from '@/lib/profiles'
-import type { Circle, Profile } from '@/types'
+import { formatTime, getInitials } from '@/lib/utils'
+import type { Group, Profile } from '@/types'
 
 export default function ChatsPage() {
-  const { user, loading } = useAuth()
+  const { user, profile, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [circles, setCircles] = useState<Circle[]>([])
-  const [people, setPeople] = useState<Profile[]>([])
-  const [pageLoading, setPageLoading] = useState(true)
+  const [groups, setGroups] = useState<Group[]>([])
+  const [following, setFollowing] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (loading) return
-    if (!user) return
-
-    Promise.all([getUserCircles(user.id), getFollowing(user.id)])
-      .then(([c, p]) => {
-        setCircles(c)
-        setPeople(p)
-      })
-      .finally(() => setPageLoading(false))
-  }, [loading, user])
-
-  useEffect(() => {
-    if (!loading && !user) {
+    if (authLoading) return
+    if (!user) {
       router.replace('/auth/login')
+      return
     }
-  }, [loading, user, router])
 
-  if (loading || !user || pageLoading) return <FullScreenLoader label="Loading chats…" />
+    Promise.all([getUserGroups(user.id), getFollowing(user.id)]).then(([g, f]) => {
+      setGroups(g)
+      setFollowing(f)
+      setLoading(false)
+    })
+  }, [authLoading, user, router])
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="flex gap-1.5"><span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" /></div>
+      </div>
+    )
+  }
+
+  if (!user) return null
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <div className="hidden md:flex"><AppSidebar /></div>
-      <main className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6 max-w-3xl">
-        <h1 className="font-semibold mb-6">Chats</h1>
-
-        <section className="mb-8">
-          <h2 className="text-sm font-medium mb-3">Circle chats</h2>
-          <div className="space-y-2">
-            {circles.map((c) => (
-              <Link key={c.id} href={`/chat/${c.id}`} className="card p-3 block hover:bg-[var(--bg-secondary)] transition-colors">
-                <p className="text-sm font-medium">{c.name}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {c.is_private ? 'Private circle' : 'Public circle'}
-                </p>
-              </Link>
-            ))}
-            {circles.length === 0 && (
-              <p className="text-sm" style={{ color: 'var(--text-faint)' }}>No circle chats yet.</p>
-            )}
+      <main className="flex-1 overflow-y-auto p-6 max-w-2xl pb-24 md:pb-6">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-semibold">Hey, {profile?.display_name ?? profile?.username ?? '—'}</h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{groups.length} channels · {following.length} following</p>
           </div>
-        </section>
+          <Link href="/explore" className="btn btn-ghost px-3 py-1.5 text-xs">Explore</Link>
+        </div>
 
-        <section>
-          <h2 className="text-sm font-medium mb-3">Direct messages</h2>
-          <div className="space-y-2">
-            {people.map((p) => (
-              <Link key={p.id} href={`/dm/${p.id}`} className="card p-3 block hover:bg-[var(--bg-secondary)] transition-colors">
-                <p className="text-sm font-medium">{p.display_name ?? p.username}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>@{p.username}</p>
-              </Link>
-            ))}
-            {people.length === 0 && (
-              <p className="text-sm" style={{ color: 'var(--text-faint)' }}>No direct messages yet.</p>
-            )}
-          </div>
-        </section>
+        <Section title="Channels">
+          {groups.length === 0 ? (
+            <EmptyState label="No channels yet" action={{ label: 'Browse circles', href: '/circles' }} />
+          ) : (
+            <div className="space-y-1">
+              {groups.map((g) => (
+                <Link key={g.id} href={`/chat/${g.id}`} className="flex items-center gap-3 p-3 rounded-[var(--radius-sm)] hover:bg-[var(--bg-secondary)] transition-colors">
+                  <div className="avatar w-9 h-9 text-xs font-semibold">
+                    {g.avatar_url ? <img src={g.avatar_url} alt={g.name} className="w-full h-full object-cover" /> : getInitials(g.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5"><span className="text-sm font-medium truncate">{g.name}</span></div>
+                    <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-faint)' }}>{g.description ?? 'Group channel'}</p>
+                  </div>
+                  <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{formatTime(g.updated_at)}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        <Section title="Direct messages">
+          {following.length === 0 ? (
+            <EmptyState label="No DMs yet" action={{ label: 'Find people', href: '/explore' }} />
+          ) : (
+            <div className="space-y-1">
+              {following.map((p) => (
+                <Link key={p.id} href={`/dm/${p.id}`} className="flex items-center gap-3 p-3 rounded-[var(--radius-sm)] hover:bg-[var(--bg-secondary)] transition-colors">
+                  <div className="avatar w-9 h-9 text-xs">{p.avatar_url ? <img src={p.avatar_url} alt={p.username} className="w-full h-full object-cover" /> : getInitials(p.display_name ?? p.username)}</div>
+                  <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{p.display_name ?? p.username}</p><p className="text-xs" style={{ color: 'var(--text-faint)' }}>@{p.username}</p></div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Section>
       </main>
       <div className="md:hidden"><MobileNav /></div>
     </div>
   )
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section className="mb-8"><h4 className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--text-faint)' }}>{title}</h4><div className="card overflow-hidden"><div className="p-1">{children}</div></div></section>
+}
+
+function EmptyState({ label, action }: { label: string; action: { label: string; href: string } }) {
+  return <div className="flex flex-col items-center py-8 gap-3"><p className="text-sm" style={{ color: 'var(--text-faint)' }}>{label}</p><Link href={action.href} className="btn btn-ghost text-xs px-4 py-1.5">{action.label}</Link></div>
 }

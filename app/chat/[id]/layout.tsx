@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import AppSidebar from '@/components/layout/AppSidebar'
 import MobileNav from '@/components/layout/MobileNav'
-import FullScreenLoader from '@/components/ui/FullScreenLoader'
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -15,9 +14,7 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
     if (!loading && !user) router.replace('/auth/login')
   }, [user, loading, router])
 
-  if (loading) return <FullScreenLoader label="Checking session…" />
-
-  if (!user) return <FullScreenLoader label="Redirecting to login…" />
+  if (loading || !user) return null
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>

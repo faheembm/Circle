@@ -41,17 +41,6 @@ export interface Group {
   updated_at: string
 }
 
-export interface Circle {
-  id: string
-  name: string
-  description: string | null
-  avatar_url: string | null
-  is_private: boolean
-  created_by: string | null
-  created_at: string
-  updated_at: string
-}
-
 export type GroupRole = 'admin' | 'member'
 
 export interface GroupMember {
@@ -60,51 +49,6 @@ export interface GroupMember {
   user_id: string
   role: GroupRole
   joined_at: string
-}
-
-export interface CircleMember {
-  id: string
-  circle_id: string
-  user_id: string
-  role: GroupRole
-  joined_at: string
-}
-
-export type RequestStatus = 'pending' | 'accepted' | 'declined'
-
-export interface FollowRequest {
-  id: string
-  requester_id: string
-  target_id: string
-  status: RequestStatus
-  created_at: string
-  updated_at: string
-}
-
-export interface FollowRequestWithRequester extends FollowRequest {
-  requester?: Profile
-}
-
-export interface CircleInvite {
-  id: string
-  circle_id: string
-  inviter_id: string
-  invitee_id: string
-  status: RequestStatus
-  created_at: string
-  updated_at: string
-}
-
-export interface CircleInviteWithDetails extends CircleInvite {
-  circle?: Circle
-  inviter?: Profile
-}
-
-export interface MessageRequest {
-  sender_id: string
-  sender: Profile
-  preview: string
-  created_at: string
 }
 
 export type MessageType = 'group' | 'direct'
@@ -216,26 +160,6 @@ export interface Database {
         Row: Message
         Insert: Omit<Message, 'id' | 'created_at' | 'updated_at'>
         Update: Pick<Message, 'content' | 'is_deleted'>
-      }
-      circles: {
-        Row: Circle
-        Insert: Omit<Circle, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<Circle, 'id' | 'created_at'>>
-      }
-      circle_members: {
-        Row: CircleMember
-        Insert: Omit<CircleMember, 'id' | 'joined_at'>
-        Update: Pick<CircleMember, 'role'>
-      }
-      follow_requests: {
-        Row: FollowRequest
-        Insert: Omit<FollowRequest, 'id' | 'created_at' | 'updated_at'>
-        Update: Pick<FollowRequest, 'status'>
-      }
-      circle_invites: {
-        Row: CircleInvite
-        Insert: Omit<CircleInvite, 'id' | 'created_at' | 'updated_at'>
-        Update: Pick<CircleInvite, 'status'>
       }
     }
   }
