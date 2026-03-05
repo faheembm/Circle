@@ -8,11 +8,12 @@ import { useMessages } from '@/hooks/useMessages'
 import { getGroup, isMember, joinGroup } from '@/lib/groups'
 import MessageList from '@/components/chat/MessageList'
 import MessageInput from '@/components/chat/MessageInput'
+import FullScreenLoader from '@/components/ui/FullScreenLoader'
 import type { Group } from '@/types'
 
 export default function GroupChatPage() {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [group, setGroup] = useState<Group | null>(null)
   const [member, setMember] = useState(false)
@@ -22,14 +23,33 @@ export default function GroupChatPage() {
     useMessages({ type: 'group', groupId: id, userId: user?.id })
 
   useEffect(() => {
-    if (!id || !user) return
-    Promise.all([getGroup(id), isMember(id, user.id)]).then(([g, m]) => {
-      if (!g) { router.push('/dashboard'); return }
-      setGroup(g)
-      setMember(m)
+    if (authLoading) return
+
+    if (!id || !user) {
       setLoading(false)
-    })
-  }, [id, user])
+      return
+    }
+
+    let active = true
+
+    Promise.all([getGroup(id), isMember(id, user.id)])
+      .then(([g, m]) => {
+        if (!active) return
+        if (!g) {
+          router.replace('/dashboard')
+          return
+        }
+        setGroup(g)
+        setMember(m)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [id, user, authLoading, router])
 
   const handleJoin = async () => {
     if (!user || !id) return
@@ -37,7 +57,9 @@ export default function GroupChatPage() {
     setMember(true)
   }
 
-  if (loading || !group) return <LoadingState />
+  if (loading || authLoading) return <LoadingState />
+
+  if (!group) return <FullScreenLoader label="Redirecting…" />
 
   return (
     <div className="flex flex-col h-full">
