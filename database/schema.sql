@@ -160,6 +160,141 @@ create policy "messages_update"
 on messages for update using (auth.uid() = sender_id);
 
 -- ============================================================
+-- CIRCLES (SOCIAL)
+-- ============================================================
+
+create table circles (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  description text,
+  avatar_url text,
+  is_private boolean default true,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table circles enable row level security;
+
+create policy "circles_read"
+on circles for select using (is_private = false);
+
+create policy "circles_create"
+on circles for insert with check (auth.uid() = created_by);
+
+-- ============================================================
+-- CIRCLE MEMBERS
+-- ============================================================
+
+create table circle_members (
+  id uuid primary key default uuid_generate_v4(),
+  circle_id uuid not null references circles(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  role group_role default 'member',
+  joined_at timestamptz default now(),
+  unique(circle_id, user_id)
+);
+
+alter table circle_members enable row level security;
+
+create policy "circle_members_read"
+on circle_members for select using (
+  exists (
+    select 1 from circle_members cm
+    where cm.circle_id = circle_members.circle_id
+    and cm.user_id = auth.uid()
+  )
+  or exists (
+    select 1 from circles c
+    where c.id = circle_members.circle_id
+    and c.is_private = false
+  )
+);
+
+create policy "circle_members_join_public"
+on circle_members for insert with check (
+  auth.uid() = user_id and exists (
+    select 1 from circles c
+    where c.id = circle_members.circle_id
+    and c.is_private = false
+  )
+);
+
+create policy "circle_members_leave"
+on circle_members for delete using (auth.uid() = user_id);
+
+create policy "circles_member_read"
+on circles for select using (
+  exists (
+    select 1 from circle_members
+    where circle_members.circle_id = circles.id
+    and circle_members.user_id = auth.uid()
+  )
+);
+
+-- ============================================================
+-- FOLLOW REQUESTS
+-- ============================================================
+
+create table follow_requests (
+  id uuid primary key default uuid_generate_v4(),
+  requester_id uuid not null references profiles(id) on delete cascade,
+  target_id uuid not null references profiles(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(requester_id, target_id)
+);
+
+alter table follow_requests enable row level security;
+
+create policy "follow_requests_read"
+on follow_requests for select using (
+  auth.uid() = requester_id or auth.uid() = target_id
+);
+
+create policy "follow_requests_create"
+on follow_requests for insert with check (auth.uid() = requester_id);
+
+create policy "follow_requests_update_target"
+on follow_requests for update using (auth.uid() = target_id);
+
+-- ============================================================
+-- CIRCLE INVITES
+-- ============================================================
+
+create table circle_invites (
+  id uuid primary key default uuid_generate_v4(),
+  circle_id uuid not null references circles(id) on delete cascade,
+  inviter_id uuid not null references profiles(id) on delete cascade,
+  invitee_id uuid not null references profiles(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(circle_id, invitee_id)
+);
+
+alter table circle_invites enable row level security;
+
+create policy "circle_invites_read"
+on circle_invites for select using (
+  auth.uid() = inviter_id or auth.uid() = invitee_id
+);
+
+create policy "circle_invites_create"
+on circle_invites for insert with check (
+  auth.uid() = inviter_id and exists (
+    select 1 from circle_members
+    where circle_members.circle_id = circle_invites.circle_id
+    and circle_members.user_id = auth.uid()
+    and circle_members.role = 'admin'
+  )
+);
+
+create policy "circle_invites_update"
+on circle_invites for update using (auth.uid() = invitee_id);
+
+-- ============================================================
 -- INDEXES
 -- ============================================================
 
@@ -169,6 +304,11 @@ create index idx_followers on follows(follower_id);
 create index idx_following on follows(following_id);
 create index idx_group_members_group on group_members(group_id);
 create index idx_group_members_user on group_members(user_id);
+create index idx_circles_private on circles(is_private);
+create index idx_circle_members_circle on circle_members(circle_id);
+create index idx_circle_members_user on circle_members(user_id);
+create index idx_follow_requests_target on follow_requests(target_id,status);
+create index idx_circle_invites_invitee on circle_invites(invitee_id,status);
 
 -- ============================================================
 -- REALTIME
@@ -196,8 +336,20 @@ create trigger groups_updated
 before update on groups
 for each row execute function update_updated_at();
 
+create trigger circles_updated
+before update on circles
+for each row execute function update_updated_at();
+
 create trigger messages_updated
 before update on messages
+for each row execute function update_updated_at();
+
+create trigger follow_requests_updated
+before update on follow_requests
+for each row execute function update_updated_at();
+
+create trigger circle_invites_updated
+before update on circle_invites
 for each row execute function update_updated_at();
 
 -- ============================================================

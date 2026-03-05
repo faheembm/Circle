@@ -42,8 +42,12 @@ export default function AppSidebar() {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
         <NavItem href="/dashboard" label="Home" icon="⌂" active={pathname === '/dashboard'} />
-        <NavItem href="/dashboard/people" label="People" icon="◎" active={pathname.startsWith('/dashboard/people')} />
-        <NavItem href="/dashboard/groups" label="All groups" icon="⬡" active={pathname === '/dashboard/groups'} />
+        <NavItem href="/chats" label="Chats" icon="✉" active={pathname.startsWith('/chats')} />
+        <NavItem href="/circles" label="Circles" icon="⬡" active={pathname.startsWith('/circles')} />
+        <NavItem href="/explore" label="Explore" icon="◎" active={pathname.startsWith('/explore')} />
+        <NavItem href="/requests" label="Requests" icon="⟡" active={pathname.startsWith('/requests')} />
+        <NavItem href="/dashboard/people" label="People" icon="○" active={pathname.startsWith('/dashboard/people')} />
+        <NavItem href="/dashboard/groups" label="Legacy groups" icon="#" active={pathname === '/dashboard/groups'} />
 
         {groups.length > 0 && (
           <>

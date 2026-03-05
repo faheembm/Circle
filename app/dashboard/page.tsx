@@ -9,22 +9,38 @@ import { formatTime, getInitials } from '@/lib/utils'
 import type { Group, Profile } from '@/types'
 
 export default function DashboardPage() {
-  const { user, profile } = useAuth()
+  const { user, profile, loading: authLoading } = useAuth()
   const [groups, setGroups] = useState<Group[]>([])
   const [following, setFollowing] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) return
+    if (authLoading) return
+
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    let active = true
+
     Promise.all([
       getUserGroups(user.id),
       getFollowing(user.id),
-    ]).then(([g, f]) => {
-      setGroups(g)
-      setFollowing(f)
-      setLoading(false)
-    })
-  }, [user])
+    ])
+      .then(([g, f]) => {
+        if (!active) return
+        setGroups(g)
+        setFollowing(f)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [user, authLoading])
 
   if (loading) {
     return <LoadingSkeleton />
