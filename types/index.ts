@@ -140,27 +140,47 @@ export interface Database {
         Row: Profile
         Insert: Omit<Profile, 'created_at' | 'updated_at'>
         Update: Partial<Omit<Profile, 'id' | 'created_at'>>
+        Relationships: []
       }
       follows: {
         Row: Follow
         Insert: Omit<Follow, 'id' | 'created_at'>
         Update: never
+        Relationships: []
       }
       groups: {
         Row: Group
         Insert: Omit<Group, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Group, 'id' | 'created_at'>>
+        Relationships: []
       }
       group_members: {
         Row: GroupMember
         Insert: Omit<GroupMember, 'id' | 'joined_at'>
         Update: Pick<GroupMember, 'role'>
+        Relationships: []
       }
       messages: {
         Row: Message
         Insert: Omit<Message, 'id' | 'created_at' | 'updated_at'>
         Update: Pick<Message, 'content' | 'is_deleted'>
+        Relationships: []
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      get_dm_conversations: {
+        Args: { user_id: string }
+        Returns: Array<Record<string, Json>>
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
